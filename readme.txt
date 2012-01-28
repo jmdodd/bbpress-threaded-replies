@@ -3,7 +3,7 @@ Contributors: jmdodd
 Tags: bbpress, replies, threaded, nested
 Requires at least: 3.1.4
 Tested up to: 3.3.1
-Stable tag: 0.1
+Stable tag: 0.2
 
 Add threaded (nested) reply functionality to bbPress.
 
@@ -30,10 +30,17 @@ Filters are available for modification of plugin behavior.
 
 == Changelog ==
 
+= 0.2 =
+* Template fix: delete leading empty line.
+* SQL fix: changed wp_postmeta to {$wpdb->postmeta} in queries.
+
 = 0.1 =
 * Initial release. 
 
 == Upgrade Notice ==
+
+= 0.2 =
+* SQL and template updates. Fixes missing pagination for blogs without default 'wp_' database prefix.
 
 = 0.1 = 
 * Initial release.

@@ -7,7 +7,6 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 //  Source: wp-content/themes/twentyeleven/index.php
 //  Source: bbpress/bbp-themes/bbp-twentyten/single-topic.php
 ?>
-
 <?php get_header(); ?>
 
 		<div id="primary">

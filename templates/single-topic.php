@@ -6,7 +6,6 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 //  Source: bbpress/bbp-themes/bbp-twentyten/single-topic.php
 ?>
-
 <?php get_header(); ?>
 
 		<div id="container primary">

@@ -69,11 +69,11 @@ function ucc_btr_get_page_of_reply( $reply_id ) {
 			AND p.post_status IN ( {$post_status_in_array} )
 			AND ( 
 				NOT EXISTS ( 
-					SELECT pm.* FROM wp_postmeta pm WHERE p.ID = pm.post_id AND pm.meta_key = '_ucc_btr_in_reply_to' 
+					SELECT pm.* FROM {$wpdb->postmeta} pm WHERE p.ID = pm.post_id AND pm.meta_key = '_ucc_btr_in_reply_to' 
 				) OR EXISTS ( 
-					SELECT pm.* FROM wp_postmeta pm WHERE p.ID = pm.post_id AND pm.meta_key = '_ucc_btr_in_reply_to' AND pm.meta_value = 0 
+					SELECT pm.* FROM {$wpdb->postmeta} pm WHERE p.ID = pm.post_id AND pm.meta_key = '_ucc_btr_in_reply_to' AND pm.meta_value = 0 
 				) OR EXISTS ( 
-					SELECT pm.* FROM wp_postmeta pm WHERE p.ID = pm.post_id AND pm.meta_key = '_ucc_btr_in_reply_to' AND pm.meta_value = %d 
+					SELECT pm.* FROM {$wpdb->postmeta} pm WHERE p.ID = pm.post_id AND pm.meta_key = '_ucc_btr_in_reply_to' AND pm.meta_value = %d 
 		) ) ORDER BY p.post_date ASC",
 		$topic_id, bbp_get_reply_post_type(), $reply->post_date_gmt, $topic_id
 	);
