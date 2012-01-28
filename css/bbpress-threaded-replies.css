@@ -1,0 +1,72 @@
+/*	Source: bbpress/bbp-themes/bbp-twentyten/css/bbpress.css	
+	Modifications for threading the bbPress default theme. */
+#content .bbp-topic-wrapper .reply {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-family: inherit;
+	font-size: inherit;
+}
+#content .bbp-topic-wrapper a {
+	text-decoration: none;
+}
+#content .replylist {
+	list-style: none;
+	margin: 0;
+	width: 100%;
+}
+#content .replylist ul {
+	list-style: none;
+}
+#content .replylist table.bbp-replies {
+	border-left: 1px solid #ddd;
+	margin-bottom: 0;
+}
+#content .replylist td.bbp-reply-author {
+	width: 120px;
+}
+#content .replylist table.bbp-replies {
+	margin-bottom: 0;
+	border-collapse: collapse;
+	margin-top: -1px;
+}
+#content .replylist tr.noheight,
+#content .replylist td.noheight.bbp-reply-author,
+#content .replylist td.noheight.bbp-reply-content {
+	height: 0;
+	line-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+#content .replylist td.ucc-bbp-in-reply-to {
+	border-top: 0;
+	padding: 4px 10px;
+	text-align: right;
+}
+#content .replylist .bbp-reply-form {
+	margin-bottom: 0;
+	-moz-border-radius: 0px;
+	border-radius: 0px;
+	border: 0;
+	width: auto;
+	position: relative;
+}
+#content .replylist #cancel-in-reply-to-link {
+	position: absolute;
+	right: 1.625em;
+	top: 0.7em;
+	padding: 0 5px;
+	font-size: 10px;
+	line-height: 16px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+	background: #1982d1;
+	color: #fff;
+	text-transform: uppercase;
+}
+#content fieldset.bbp-form, 
+#container fieldset.bbp-form, 
+#wrapper fieldset.bbp-form {
+	border-color: #ddd;
+}
