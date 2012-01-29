@@ -2,7 +2,7 @@
 /*
 Plugin Name: bbPress Threaded Replies 
 Description: Add threaded (nested) reply functionality to bbPress. 
-Version: 0.2
+Version: 0.3
 Author: Jennifer M. Dodd
 Author URI: http://uncommoncontent.com/
 Text Domain: bbpress-threaded-replies
@@ -31,8 +31,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 define( 'UCC_BTR_DIR', plugin_dir_path( __FILE__ ) );
 
-include( UCC_BTR_DIR . 'library/reply.php' );
 include( UCC_BTR_DIR . 'library/reply-template.php' );
+include( UCC_BTR_DIR . 'library/callbacks.php' );
 
 
 if ( ! class_exists( 'UCC_bbPress_Threaded_Replies' ) ) {
@@ -64,7 +64,7 @@ class UCC_bbPress_Threaded_Replies {
 		add_filter( 'bbp_has_replies', array( $this, 'has_replies' ), 10, 2 );
 		add_filter( 'bbp_replies_pagination', array( $this, 'replies_pagination' ) );
 		add_filter( 'bbp_get_topic_pagination', array( $this, 'get_topic_pagination' ), 10, 2 );
-		add_action( 'bbp_get_reply_url', array( $this, 'reply_url' ), 10, 3 );
+		add_filter( 'bbp_get_reply_url', array( $this, 'reply_url' ), 99, 3 );
 		add_action( 'bbp_merge_topic', array( $this, 'merge_topic' ), 10, 3 );
 		add_action( 'bbp_pre_split_topic', array( $this, 'split_topic' ), 10, 3 );
 		
@@ -72,8 +72,26 @@ class UCC_bbPress_Threaded_Replies {
 		add_action( 'template_redirect', array( $this, 'template_redirect' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_externals' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'load_externals' ) );
+
+		// Caching.
+		add_action( 'save_post', array( $this, 'clean_cache' ) );
+		add_action( 'edit_post', array( $this, 'clean_cache' ) );
+		add_action( 'trash_post', array( $this, 'clean_cache' ) );
+		add_action( 'untrash_post', array( $this, 'clean_cache' ) );
+		add_action( 'delete_post', array( $this, 'clean_cache' ) );
+		add_action( 'bbp_post_split_topic', array( $this, 'clean_cache' ) );
+		add_action( 'bbp_merged_topic', array( $this, 'clean_cache' ) );
+		add_action( 'bbp_closed_topic', array( $this, 'clean_cache' ) );
+		add_action( 'bbp_opened_topic', array( $this, 'clean_cache' ) );
+		add_action( 'bbp_spammed_topic', array( $this, 'clean_cache' ) );
+		add_action( 'bbp_unspammed_topic', array( $this, 'clean_cache' ) );
+		add_action( 'bbp_sticked_topic', array( $this, 'clean_cache' ) );
+		add_action( 'bbp_unsticked_topic', array( $this, 'clean_cache' ) );
+		add_action( 'bbp_deleted_topic', array( $this, 'clean_cache' ) );
+		add_action( 'bbp_trashed_topic', array( $this, 'clean_cache' ) );
+		add_action( 'bbp_untrashed_topic', array( $this, 'clean_cache' ) );
 	}
-	
+
 	//  Admin-side edit functionality and input handling.
 	public function extend_reply_metabox( $reply_id ) {
 		$value = absint( get_post_meta( $reply_id, '_ucc_btr_in_reply_to', true ) );
@@ -240,7 +258,7 @@ class UCC_bbPress_Threaded_Replies {
 	}
 	
 	public function split_topic( $from_reply_id, $source_topic_id, $destination_topic_id ) {
-		delete_post_meta( $from_reply_id, '_ucc_btr_in_reply_to' );
+		update_post_meta( $from_reply_id, '_ucc_btr_in_reply_to', '0' );
 	}
 	
 	//  Try to find our template.
@@ -320,6 +338,40 @@ class UCC_bbPress_Threaded_Replies {
 			
 		echo "\t\t\t<h3><small>" . ucc_btr_get_cancel_in_reply_to_link( 'Cancel reply' ) . "</small></h3>";
 	}
+
+	public function clean_cache() {
+		$group = 'ucc-btr';
+		$expires = ucc_btr_get_expires();
+		$topics = array( $source_topic_id, $destination_topic_id );
+
+		$ids = func_get_args();
+		foreach( $ids as $id ) {
+			$id = (int) $id;
+			$topic_id = null;
+			$post_type = get_post_type( $id );
+			if ( $post_type == bbp_get_reply_post_type() )
+				$topic_id = bbp_get_reply_topic_id( $id );
+			elseif ( $post_type == bbp_get_topic_post_type() )
+				$topic_id = $id;
+
+			if ( empty( $topic_id ) )
+				continue;
+		
+			//  Delete root counts.
+			$cache_key_all = 'topic_count_all_' . $topic_id;
+			$cache_key = 'topic_count_' . $topic_id;
+
+			wp_cache_delete( $cache_key_all, $group );
+			wp_cache_delete( $cache_key, $group );
+
+			//  Delete topic pagination array.
+			$cache_key_all = 'topic_pages_all_' . $topic_id;
+			$cache_key = 'topic_pages_' . $topic_id;
+
+			wp_cache_delete( $cache_key_all, $group );
+			wp_cache_delete( $cache_key, $group );
+		}
+	}	
 } }
 
 

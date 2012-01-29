@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 ?>
 <?php get_header(); ?>
 
-		<div id="container primary">
+		<div id="container">
 			<div id="content" role="main">
 
 				<?php do_action( 'bbp_template_notices' ); ?>

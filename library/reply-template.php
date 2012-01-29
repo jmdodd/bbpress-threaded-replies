@@ -4,6 +4,13 @@
 if ( !defined( 'ABSPATH' ) ) exit;
 
 
+if ( ! function_exists( 'ucc_btr_get_expires' ) ) {
+function ucc_btr_get_expires() {
+	$expires = apply_filters( 'ucc_btr_expires', 3600 );
+	return $expires;
+} }
+
+
 if ( ! function_exists( 'ucc_btr_get_root_element_id' ) ) {
 function ucc_btr_get_root_element_id( $reply_id ) {
 	$in_reply_to = get_post_meta( $reply_id, '_ucc_btr_in_reply_to', true );
@@ -15,11 +22,22 @@ function ucc_btr_get_root_element_id( $reply_id ) {
 
 
 if ( ! function_exists( 'ucc_btr_get_root_element_count' ) ) {
-function ucc_btr_get_root_element_count( $topic_id ) {
+function ucc_btr_get_root_element_count( $topic_id, $all = false ) {
 	global $wpdb;
+
+	$group = 'ucc-btr';
+	$expires = ucc_btr_get_expires();
+	if ( bbp_get_view_all( 'edit_others_replies' ) || $all )
+		$cache_key = 'topic_count_all_' . $topic_id;
+	else
+		$cache_key = 'topic_count_' . $topic_id;
+	
+	$count = wp_cache_get( $cache_key, $group );
+	if ( false !== $count )
+		return $count;
 	
 	$post_status = join( ',', array( bbp_get_public_status_id(), bbp_get_closed_status_id() ) );
-	if ( bbp_get_view_all( 'edit_others_replies' ) ) {
+	if ( bbp_get_view_all( 'edit_others_replies' ) || $all ) {
 		$post_status = join( ',', array( bbp_get_public_status_id(), bbp_get_closed_status_id(), bbp_get_spam_status_id(), bbp_get_trash_status_id() ) );
 	}
 	$post_status = explode( ',', $post_status );
@@ -41,12 +59,114 @@ function ucc_btr_get_root_element_count( $topic_id ) {
 					SELECT pm.* FROM {$wpdb->postmeta} pm WHERE p.ID = pm.post_id AND pm.meta_key = '_ucc_btr_in_reply_to' AND pm.meta_value = 0 
 				) OR EXISTS ( 
 					SELECT pm.* FROM {$wpdb->postmeta} pm WHERE p.ID = pm.post_id AND pm.meta_key = '_ucc_btr_in_reply_to' AND pm.meta_value = %d 
-		) ) ORDER BY p.post_date ASC",
+		) ) ORDER BY p.post_date_gmt ASC",
 		$topic_id, bbp_get_reply_post_type(), $topic_id
 	);
 	$count = $wpdb->get_var( $sql );
+
+	wp_cache_set( $cache_key, $count, $group, $expires );
 	
 	return $count;
+} }
+
+
+//  Source: wp-includes/comment.php
+//  Derived from get_comment_pages_count().
+if ( ! function_exists( 'ucc_btr_get_reply_paged_count' ) ) {
+function ucc_btr_get_reply_pages_count( $replies = null, $per_page = null, $threaded = null ) {
+	global $bbp, $wp_query;
+
+	if ( null === $replies && null === $per_page && null === $threaded && ! empty( $bbp->max_num_pages ) )
+		return $bbp->max_num_pages;
+
+	if ( ! $replies || ! is_array( $replies ) )
+		$replies = $bbp->replies;
+
+	if ( empty( $replies ) )
+		return 0;
+
+	if ( ! isset( $per_page ) )
+		$per_page = (int) get_option( '_bbp_replies_per_page' );
+	if ( 0 === $per_page )
+		$per_page = (int) get_option( 'comments_per_page' );
+	if ( 0 === $per_page )
+		return 1;
+
+	if ( ! isset( $threaded ) )
+		$threaded = get_option( 'thread_comments' );
+
+	if ( $threaded ) {
+		$count = (int) ucc_btr_get_root_element_count( bbp_get_topic_id() );
+		$total = ceil( $count / $per_page );
+	} else {
+		$total = ceil( count( $replies ) / $per_page );
+	}
+
+	return $total;
+} }
+
+
+//  Source: wp-includes/comment.php
+//  Derived from get_page_of_comment().
+if ( ! function_exists( 'ucc_btr_get_page_of_reply' ) ) {
+function ucc_btr_get_page_of_reply( $reply_id, $all = false ) {
+	global $wpdb;
+
+	$topic_id = bbp_get_reply_topic_id( $reply_id );
+
+	$group = 'ucc-btr';
+	$expires = ucc_btr_get_expires();
+	if ( bbp_get_view_all( 'edit_others_replies' ) || $all )
+		$cache_key = 'topic_pages_all_' . $topic_id;
+	else
+		$cache_key = 'topic_pages_' . $topic_id;
+
+	$pages = wp_cache_get( $cache_key, $group );
+
+	if ( empty( $pages ) ) 
+		$pages = array();
+	elseif ( is_array( $pages ) && array_key_exists( $reply_id, $pages ) ) 
+		return $pages[$reply_id];
+
+	$root_id = ucc_btr_get_root_element_id( $reply_id );
+	$post_date_gmt = get_post_time( 'Y-m-d H:i:s', true, $root_id );
+
+	$post_status = join( ',', array( bbp_get_public_status_id(), bbp_get_closed_status_id() ) );
+	if ( bbp_get_view_all( 'edit_others_replies' ) || $all ) {
+		$post_status = join( ',', array( bbp_get_public_status_id(), bbp_get_closed_status_id(), bbp_get_spam_status_id(), bbp_get_trash_status_id() ) );
+	}
+	$post_status = explode( ',', $post_status );
+	$post_status_in_array = array();
+	foreach ( $post_status as $ps )
+		$post_status_in_array[] = $wpdb->prepare( "%s", $ps );
+	$post_status_in_array = implode( ',', $post_status_in_array );
+
+	//  Direct SQL is more efficient than trying to use WP_Query here.
+	$sql = $wpdb->prepare( "
+		SELECT COUNT(*) FROM {$wpdb->posts} p
+		WHERE p.post_parent = %d
+			AND p.post_type = %s
+			AND p.post_date_gmt < %s
+			AND p.post_status IN ( {$post_status_in_array} )
+			AND (
+				NOT EXISTS (
+					SELECT pm.* FROM {$wpdb->postmeta} pm WHERE p.ID = pm.post_id AND pm.meta_key = '_ucc_btr_in_reply_to'
+				) OR EXISTS (
+					SELECT pm.* FROM {$wpdb->postmeta} pm WHERE p.ID = pm.post_id AND pm.meta_key = '_ucc_btr_in_reply_to' AND pm.meta_value = 0
+				) OR EXISTS (
+					SELECT pm.* FROM {$wpdb->postmeta} pm WHERE p.ID = pm.post_id AND pm.meta_key = '_ucc_btr_in_reply_to' AND pm.meta_value = %d
+		) ) ORDER BY p.post_date_gmt ASC",
+		$topic_id, bbp_get_reply_post_type(), $post_date_gmt, $topic_id
+	);
+	$previous = $wpdb->get_var( $sql );
+
+	$posts_per_page = get_option( '_bbp_replies_per_page' );
+	$page = ceil( ( $previous + 1 ) / $posts_per_page );
+
+	$pages[$reply_id] = $page;
+	wp_cache_set( $cache_key, $pages, $group, $expires );	
+
+	return $page;
 } }
 
 
@@ -61,6 +181,8 @@ function ucc_btr_get_reply_link( $url, $reply_id, $redirect_to ) {
 	$topic_url = bbp_get_topic_permalink( $topic_id, $redirect_to );
 	$reply_hash = '#reply-' . $reply_id;
 
+	$topic_url = remove_query_arg( 'view', $topic_url );
+
 	//  Deal with pagination and permalink structure.
 	if ( 1 >= $reply_page ) {
 		$url = user_trailingslashit( $topic_url ) . $reply_hash;
@@ -71,12 +193,11 @@ function ucc_btr_get_reply_link( $url, $reply_id, $redirect_to ) {
 			$url = add_query_arg( 'paged', $reply_page, user_trailingslashit( $topic_url ) ) . $reply_hash;
 		}
 	}
-	
-	//  In case we ever need it.
+
 	if ( bbp_get_view_all() )
 		$url = bbp_add_view_all( $url );
 
-	return apply_filters( 'ucc_btr_reply_link', $url, $reply_id, $redirect_to );
+	return $url;
 } }
 
 
@@ -171,31 +292,31 @@ function ucc_btr_reply_class( $class = '', $reply_id = null, $topic_id = null, $
 //  Source: wp-includes/comment-template.php
 //  Derived from get_comment_reply_link().
 if ( ! function_exists( 'ucc_btr_get_in_reply_to_link' ) ) {
-function ucc_btr_get_in_reply_to_link( $args = array(), $reply = null, $topic = null ) {
+function ucc_btr_get_in_reply_to_link( $args = array(), $_reply = null, $topic = null ) {
 	global $user_ID, $reply;
 
 	$defaults = array( 
 		'add_below' => 'reply', 
-		'respond_id' => 'new-reply-' . bbp_get_topic_id(), 
+		'respond_id' => 'new-reply-' . bbp_get_topic_id(),
 		'reply_text' => __( 'Reply to this', 'bbpress-threaded-replies' ),
 		'login_text' => __( 'Log in to Reply', 'bbpress-threaded-replies' ), 
-		'depth' => 0, 
+		'depth' => 0,
 		'before' => '', 
 		'after' => '' 
 	);
 
-	$args = wp_parse_args( $args, $defaults );
+	$r = wp_parse_args( $args, $defaults );
 
-	if ( 0 == $args['depth'] || $args['max_depth'] <= $args['depth'] )
+	if ( 0 == $r['depth'] || $r['max_depth'] <= $r['depth'] )
 		return;
 
-	extract( $args, EXTR_SKIP );
+	extract( $r, EXTR_SKIP );
 
 	$link = '';
 
 	remove_query_arg( array( 'inreplyto', 'inreplyto_nonce' ) );
 	if ( bbp_current_user_can_access_create_reply_form() ) {
-    		$link = "<a class='in-reply-to-link' href='" . esc_url( add_query_arg( array( 'inreplyto_nonce' => wp_create_nonce( 'inreplyto-nonce' ), 'inreplyto' => bbp_get_reply_id() ) ) ) . "#" . $respond_id . "' onclick='return addReply.moveForm(\"$add_below-$reply->ID\", \"$reply->ID\", \"$respond_id\", \"$reply->post_parent\")'>$reply_text</a>";
+		$link = "<a class='in-reply-to-link' href='" . esc_url( add_query_arg( array( 'inreplyto_nonce' => wp_create_nonce( 'inreplyto-nonce' ), 'inreplyto' => bbp_get_reply_id() ) ) ) . "#" . $respond_id . "' onclick='return addReply.moveForm(\"$add_below-$reply->ID\", \"$reply->ID\", \"$respond_id\", \"$reply->post_parent\")'>$reply_text</a>";
 	} elseif ( bbp_is_topic_closed() ) {
 	} elseif ( bbp_is_forum_closed( bbp_get_topic_forum_id() ) ) {
 	} else {
@@ -237,142 +358,6 @@ function ucc_btr_cancel_in_reply_to_link( $text = '' ) {
 
 
 //  Source: wp-includes/comment-template.php
-//  Derived from Walker_Comment.
-if ( ! class_exists( 'UCC_BTR_Walker_Reply' ) ) {
-class UCC_BTR_Walker_Reply extends Walker {
-	var $tree_type = 'reply';
-	var $db_fields = array ( 'parent' => 'in_reply_to', 'id' => 'ID' );
-
-	function start_lvl( &$output, $depth, $args ) {
-		$GLOBALS['reply_depth'] = $depth + 1;
-
-		switch ( $args['style'] ) {
-			case 'div':
-				break;
-			case 'ol':
-				echo "<ol class='children'>\n";
-				break;
-			default:
-			case 'ul':
-				echo "<ul class='children'>\n";
-				break;
-		}
-	}
-
-	function end_lvl( &$output, $depth, $args ) {
-		$GLOBALS['reply_depth'] = $depth + 1;
-
-		switch ( $args['style'] ) {
-			case 'div':
-				break;
-			case 'ol':
-				echo "</ol>\n";
-				break;
-			default:
-			case 'ul':
-				echo "</ul>\n";
-				break;
-		}
-	}
-
-	function display_element( $element, &$children_elements, $max_depth, $depth = 0, $args, &$output ) {
-		if ( ! $element )
-			return;
-
-		$id_field = $this->db_fields['id'];
-		$id = $element->$id_field;
-
-		parent::display_element( $element, $children_elements, $max_depth, $depth, $args, $output );
-
-		//  If we're at the max depth, and the current element still has children, loop over those and display them at this level
-		//  This is to prevent them being orphaned to the end of the list.
-		if ( $max_depth <= $depth + 1 && isset( $children_elements[$id] ) ) {
-			foreach ( $children_elements[ $id ] as $child )
-				$this->display_element( $child, $children_elements, $max_depth, $depth, $args, $output );
-
-			unset( $children_elements[ $id ] );
-		}
-	}
-
-	function start_el( &$output, $_reply, $depth, $args ) {
-		global $bbp, $post, $reply;
-		
-		$original_post = $post;
-		$original_reply = $reply;
-		
-		//  Force WordPress/bbPress functions to use the right reply.
-		$post = $_reply;
-		$bbp->reply_query->post = $_reply;
-		$reply = $_reply;
-		
-		$depth++;
-		$GLOBALS['reply_depth'] = $depth;
-
-		if ( ! empty( $args['callback'] ) ) {
-			call_user_func( $args['callback'], $reply, $args, $depth );
-			return;
-		}
-		
-		$GLOBALS['reply'] = $reply;
-		extract( $args, EXTR_SKIP );
-
-		if ( 'div' == $args['style'] ) {
-			$tag = 'div';
-			$add_below = 'reply';
-		} else {
-			$tag = 'li';
-			$add_below = 'div-reply';
-		} ?>
-<<?php echo $tag ?> <?php ucc_btr_reply_class( empty( $args['has_children'] ) ? '' : 'parent' ); ?>>
-		<?php 
-		if ( 'div' != $args['style'] ) { ?>
-<div id="div-reply-<?php bbp_reply_ID(); ?>" class="reply-body">
-		<?php
-		} ?>
-<table class="bbp-replies" id="reply-<?php bbp_reply_ID(); ?>">
-	<tbody>
-<tr class="noheight">
-	<td class="bbp-reply-author noheight"></td>
-	<td class="bbp-reply-content noheight"></td>
-</tr>
-<tr>
-<?php bbp_get_template_part( 'bbpress/loop', 'single-reply' ); ?>
-</tr>
-<tr>
-	<td colspan="2" class="ucc-bbp-in-reply-to">
-<div class="reply">
-<?php ucc_btr_in_reply_to_link( array_merge( $args, array( 'reply_text' => 'Reply &darr;', 'add_below' => $add_below, 'depth' => $depth, 'max_depth' => $args['max_depth'] ) ) ); ?>
-</div>
-	</td>
-</tr>
-	</tbody>
-</table>
-		<?php
-		if ( 'div' != $args['style'] ) { ?>
-</div>
-		<?php 
-		}
-		
-		//  Restore order.
-		$post = $original_post;
-		$bbp->reply_query->post = $original_post;
-		$reply = $original_reply;
-	}
-
-	function end_el( &$output, $reply, $depth, $args ) {
-		if ( ! empty( $args['end-callback'] ) ) {
-			call_user_func( $args['end-callback'], $reply, $args, $depth );
-			return;
-		}
-		if ( 'div' == $args['style'] )
-			echo "</div>\n";
-		else
-			echo "</li>\n";
-	}
-} }
-
-
-//  Source: wp-includes/comment-template.php
 //  Derived from comments_template().
 if ( ! function_exists( 'ucc_btr_replies_template' ) ) {
 function ucc_btr_replies_template( $file = '/replies.php' ) {
@@ -409,64 +394,6 @@ function ucc_btr_replies_template( $file = '/replies.php' ) {
 } }
 
 
-//  Source: wp-content/themes/twentyeleven/functions.php
-//  Derived from twentyeleven_comment().
-if ( ! function_exists( 'ucc_btr_twentyeleven_reply_cb' ) ) {
-function ucc_btr_twentyeleven_reply_cb( $reply, $args, $depth ) {
-	global $reply; ?>
-<li <?php ucc_btr_reply_class(); ?> id="li-comment-<?php bbp_reply_id(); ?>">
-<article id="reply-<?php bbp_reply_id(); ?>" class="comment">
-	<footer class="comment-meta">
-		<div class="comment-author vcard">
-		<?php
-		$avatar_size = 39;
-		$in_reply_to = get_post_meta( $reply->ID, '_ucc_btr_in_reply_to', true );
-		if ( empty( $in_reply_to ) || ( bbp_get_reply_topic_id( $post->ID ) == $in_reply_to ) )
-			$avatar_size = 68;
-		echo bbp_get_reply_author_link( array( 'type' => 'avatar', 'size' => $avatar_size ) ); ?>
-		<?php do_action( 'bbp_theme_before_reply_admin_links' ); ?>
-
-		<?php bbp_reply_admin_links(); ?>
-
-		<?php do_action( 'bbp_theme_after_reply_admin_links' ); ?>
-		<?php
-		if ( is_super_admin() ) {
-			$author_ip = bbp_get_author_ip( bbp_get_reply_id() );
-		} else {
-			$author_ip = '';
-		} ?>
-		
-		<?php do_action( 'bbp_theme_before_reply_author_details' ); ?>
-		<?php
-		/* translators: 1: comment author, 2: date and time */
-		printf( __( '%1$s on %2$s <span class="says">said:</span>', 'bbpress-threaded-replies' ),
-			sprintf( '<span class="fn">%s %s</span>', bbp_get_reply_author_link( array( 'type' => 'name' ) ), $author_ip ),
-			sprintf( '<a href="%1$s"><time pubdate datetime="%2$s">%3$s</time></a>',
-			esc_url( bbp_get_reply_url() ),
-			get_the_time( 'c', bbp_get_reply_id() ),
-			/* translators: 1: date, 2: time */
-			sprintf( __( '%1$s at %2$s', 'bbpress-threaded-replies' ), esc_attr( get_the_time( get_option( 'date_format' ), bbp_get_reply_id() ) ), esc_attr( get_the_time( get_option( 'time_format' ), bbp_get_reply_id() ) ) )
-		) ); ?>
-		<?php do_action( 'bbp_theme_after_reply_author_details' ); ?>
-		</div><!-- .comment-author .vcard -->
-	</footer>
-
-	<div class="comment-content">
-	<?php do_action( 'bbp_theme_after_reply_content' ); ?>
-
-	<?php bbp_reply_content(); ?>
-
-	<?php do_action( 'bbp_theme_before_reply_content' ); ?>	
-	</div>
-
-				<div class="reply">
-					<?php ucc_btr_in_reply_to_link( array_merge( $args, array( 'reply_text' => __( 'Reply <span>&darr;</span>', 'bbpress-threaded-replies' ), 'depth' => $depth, 'max_depth' => $args['max_depth'], 'add_below' => 'reply' ) ) ); ?>
-				</div><!-- .reply -->
-			</article><!-- #comment-## -->
-<?php
-} }
-
-
 //  Source: wp-includes/comment-template.php
 //  Derived from wp_list_comments().
 if ( ! function_exists( 'ucc_btr_list_replies' ) ) {
@@ -482,7 +409,7 @@ function ucc_btr_list_replies( $args = array(), $replies = null ) {
 		'walker' => null, 
 		'max_depth' => '', 
 		'style' => 'ul', 
-		'callback' => null, 
+		'callback' => 'ucc_btr_bbpress_reply_cb', 
 		'end-callback' => null, 
 		'type' => 'all', 
 		'page' => '', 
@@ -492,7 +419,7 @@ function ucc_btr_list_replies( $args = array(), $replies = null ) {
 		'reverse_children' => ''
 	);
 
-	$args = wp_parse_args( $args, $defaults );
+	$r = wp_parse_args( $args, $defaults );
 
 	if ( null !== $replies ) {
 		$replies = (array) $replies;
@@ -505,45 +432,46 @@ function ucc_btr_list_replies( $args = array(), $replies = null ) {
 		$_replies = $bbp->replies;
 	}
 
-	if ( '' === $args['per_page'] )
-		$args['per_page'] = get_option( '_bbp_replies_per_page' );
+	if ( '' === $r['per_page'] )
+		$r['per_page'] = get_option( '_bbp_replies_per_page' );
 
-	if ( empty( $args['per_page'] ) ) {
-		$args['per_page'] = 0;
-		$args['page'] = 0;
+	if ( empty( $r['per_page'] ) ) {
+		$r['per_page'] = 0;
+		$r['page'] = 0;
 	}
 
-	if ( '' === $args['max_depth'] ) {
+	if ( '' === $r['max_depth'] ) {
 		if ( get_option( 'thread_comments' ) )
-			$args['max_depth'] = get_option( 'thread_comments_depth' );
+			$r['max_depth'] = get_option( 'thread_comments_depth' );
 		else
-			$args['max_depth'] = -1;
+			$r['max_depth'] = -1;
 	}
 
-	if ( '' === $args['page'] ) {
+	if ( '' === $r['page'] ) {
 		if ( empty( $overridden_rpage ) ) {
-			$args['page'] = get_query_var( 'paged' );
+			$r['page'] = get_query_var( 'paged' );
 		} else {
-			$threaded = ( -1 != $args['max_depth'] );
-			$args['page'] = ( 'newest' == get_option( 'default_comments_page' ) ) ? ucc_btr_get_reply_pages_count( $_replies, $args['per_page'], $threaded ) : 1;
-			set_query_var( 'paged', $args['page'] );
+			$threaded = ( -1 != $r['max_depth'] );
+			$r['page'] = ( 'newest' == get_option( 'default_comments_page' ) ) ? ucc_btr_get_reply_pages_count( $_replies, $r['per_page'], $threaded ) : 1;
+			set_query_var( 'paged', $r['page'] );
 		}
 	}
 	
 	//  Validation check
-	$args['page'] = intval( $args['page'] );
-	if ( 0 == $args['page'] && 0 != $args['per_page'] )
-		$args['page'] = 1;
+	$r['page'] = intval( $r['page'] );
+	if ( 0 == $r['page'] && 0 != $r['per_page'] )
+		$r['page'] = 1;
 
-	if ( null === $args['reverse_top_level'] )
-		$args['reverse_top_level'] = ( 'desc' == get_option( 'comment_order' ) );
+	if ( null === $r['reverse_top_level'] )
+		$r['reverse_top_level'] = ( 'desc' == get_option( 'comment_order' ) );
 
-	extract( $args, EXTR_SKIP );
+	extract( $r, EXTR_SKIP );
 
 	if ( empty( $walker ) )
-		$walker = new UCC_BTR_Walker_Reply;
+		$walker = new Walker_Comment;
+	$walker->db_fields = array( 'parent' => 'in_reply_to', 'id' => 'ID' );
 	
-	$walker->paged_walk( $_replies, $max_depth, $page, $per_page, $args );
+	$walker->paged_walk( $_replies, $max_depth, $page, $per_page, $r );
 	$bbp->max_num_pages = $walker->max_pages;
 
 	$in_reply_loop = false;
