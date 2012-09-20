@@ -1,10 +1,5 @@
 <?php
-
-
-if ( ! defined( 'ABSPATH' ) ) exit;
-
-
-//  Source: bbpress/bbp-themes/bbp-twentyten/bbpress/content-single-topic.php
+// Source: bbp-themes/bbp-twentyten/content-single-topic.php
 ?>
 
 	<?php bbp_breadcrumb(); ?>
@@ -31,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 			<?php bbp_get_template_part( 'bbpress/pagination', 'replies' ); ?>
 
-			<?php include( 'loop-replies.php' ); ?>
+			<?php include( 'ucc-loop-replies.php' ); ?>
 
 			<?php bbp_get_template_part( 'bbpress/pagination', 'replies' ); ?>
 
@@ -42,3 +37,4 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 	<?php endif; ?>
 
 	<?php do_action( 'bbp_template_after_single_topic' ); ?>
+

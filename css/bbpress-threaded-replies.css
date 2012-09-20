@@ -1,47 +1,29 @@
-/*	Source: bbpress/bbp-themes/bbp-twentyten/css/bbpress.css	
-	Modifications for threading the bbPress default theme. */
-#content .bbp-topic-wrapper .reply {
-	margin: 0;
-	padding: 0;
-	border: 0;
-	font-family: inherit;
-	font-size: inherit;
-}
-#content .bbp-topic-wrapper a {
-	text-decoration: none;
-}
+/* Modifications for threading; tested under bbp-theme-compat and bbp-twentyten. */
 #content .replylist {
 	list-style: none;
 	margin: 0;
-	width: 100%;
 }
-#content .replylist ul {
-	list-style: none;
-}
-#content .replylist table.bbp-replies {
-	border-left: 1px solid #ddd;
-	margin-bottom: 0;
-}
-#content .replylist td.bbp-reply-author {
-	width: 120px;
-}
-#content .replylist table.bbp-replies {
-	margin-bottom: 0;
+#content .replylist table,
+#content .replylist tbody,
+#content .replylist tr,
+#content .replylist td {
 	border-collapse: collapse;
-	margin-top: -1px;
 }
-#content .replylist tr.noheight,
-#content .replylist td.noheight.bbp-reply-author,
-#content .replylist td.noheight.bbp-reply-content {
-	height: 0;
-	line-height: 0;
-	margin: 0;
-	padding: 0;
-	border: 0;
+#content .replylist ul.children {
+	list-style: none;
+	margin: 0 0 0 2.0em ;
 }
-#content .replylist td.ucc-bbp-in-reply-to {
-	border-top: 0;
-	padding: 4px 10px;
+#content .replylist li,
+#content .replylist li div.reply {
+	padding-bottom: 0;
+}
+#content table.bbp-replies,
+#content .replylist table.bbp-replies {
+	margin: -1px 0 0 0;
+}
+#content .replylist .ucc-bbp-in-reply-to {
+	padding: 0 1.625em 1.625em 1.625em;
+	border-top: 0px;
 	text-align: right;
 }
 #content .replylist .bbp-reply-form {

@@ -1,11 +1,7 @@
 <?php
-
-
-if ( ! defined( 'ABSPATH' ) ) exit;
-
-
-//  Source: bbpress/bbp-themes/bbp-twentyten/single-topic.php
+// Source: bbp-themes/bbp-twentyten/single-topic.php
 ?>
+
 <?php get_header(); ?>
 
 		<div id="container">
@@ -16,24 +12,15 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 				<?php if ( bbp_user_can_view_forum( array( 'forum_id' => bbp_get_topic_forum_id() ) ) ) : ?>
 
 					<?php while ( have_posts() ) : the_post(); ?>
-<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
-	<header class="entry-header">
-		<h1 class="entry-title"><?php the_title(); ?></h1>
-	</header><!-- .entry-header -->
-
-	<div class="entry-content">
 
 						<div id="bbp-topic-wrapper-<?php bbp_topic_id(); ?>" class="bbp-topic-wrapper">
+							<h1 class="entry-title"><?php bbp_topic_title(); ?></h1>
+							<div class="entry-content">
 
-								<?php include( 'bbpress/content-single-topic.php' ); ?>
+								<?php include( 'bbpress/ucc-content-single-topic.php' ); ?>
 
+							</div>
 						</div><!-- #bbp-topic-wrapper-<?php bbp_topic_id(); ?> -->
-					
-	</div><!-- .entry-content -->
-
-	<footer class="entry-meta">
-	</footer><!-- .entry-meta -->
-</article><!-- #post- -->
 
 					<?php endwhile; ?>
 
@@ -46,4 +33,5 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 			</div><!-- #content -->
 		</div><!-- #container -->
 
+<?php get_sidebar(); ?>
 <?php get_footer(); ?>

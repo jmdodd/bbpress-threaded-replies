@@ -1,10 +1,5 @@
 <?php
-
-
-if ( ! defined( 'ABSPATH' ) ) exit;
-
-
-//  Source: bbpress/bbp-themes/bbp-twentyten/bbpress/loop-replies.php
+// Source: bbp-themes/bbp-twentyten/bbpress/loop-replies.php
 ?>
 
 	<?php do_action( 'bbp_template_before_replies_loop' ); ?>
@@ -12,12 +7,12 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 	<table class="bbp-replies" id="topic-<?php bbp_topic_id(); ?>-replies">
 		<thead>
 			<tr>
-				<th class="bbp-reply-author"><?php  _e( 'Author',  'bbpress' ); ?></th>
+				<th class="bbp-reply-author"><?php  _e( 'Author',  'bbpress-threaded-replies' ); ?></th>
 				<th class="bbp-reply-content">
 
 					<?php if ( !bbp_show_lead_topic() ) : ?>
 
-						<?php _e( 'Posts', 'bbpress' ); ?>
+						<?php _e( 'Posts', 'bbpress-threaded-replies' ); ?>
 
 						<?php bbp_user_subscribe_link(); ?>
 
@@ -25,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 					<?php else : ?>
 
-						<?php _e( 'Replies', 'bbpress' ); ?>
+						<?php _e( 'Replies', 'bbpress-threaded-replies' ); ?>
 
 					<?php endif; ?>
 
@@ -35,16 +30,16 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 		<tfoot>
 			<tr>
-				<th class="bbp-reply-author"><?php  _e( 'Author',  'bbpress' ); ?></th>
+				<th class="bbp-reply-author"><?php  _e( 'Author',  'bbpress-threaded-replies' ); ?></th>
 				<th class="bbp-reply-content">
 
 					<?php if ( !bbp_show_lead_topic() ) : ?>
 
-						<?php _e( 'Posts', 'bbpress' ); ?>
+						<?php _e( 'Posts', 'bbpress-threaded-replies' ); ?>
 
 					<?php else : ?>
 
-						<?php _e( 'Replies', 'bbpress' ); ?>
+						<?php _e( 'Replies', 'bbpress-threaded-replies' ); ?>
 
 					<?php endif; ?>
 
@@ -53,7 +48,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 		</tfoot>
 
 		<tbody>
-			
+
 			<?php if ( ! bbp_show_lead_topic() ) : ?>
 				
 				<?php bbp_the_reply(); ?>
@@ -61,13 +56,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 				<?php bbp_get_template_part( 'bbpress/loop', 'single-reply' ); ?>
 				
 			<?php endif; ?>
-		
+
 		</tbody>
+
 	</table>
-	
+
 	<ol class="replylist">
-			
-	<?php ucc_btr_list_replies(); ?>
+
+		<?php ucc_btr_list_replies(); ?>
 
 	</ol>
 

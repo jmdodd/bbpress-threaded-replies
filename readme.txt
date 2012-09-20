@@ -1,34 +1,37 @@
 === bbPress Threaded Replies ===
 Contributors: jmdodd
 Tags: bbpress, replies, threaded, nested
-Requires at least: 3.1.4
-Tested up to: 3.3.1
-Stable tag: 0.3
+Requires at least: WordPress 3.4, bbPress 2.0
+Tested up to: 3.4
+Stable tag: 0.4
 
 Add threaded (nested) reply functionality to bbPress.
 
 == Description ==
 
 bbPress Threaded Replies is based on comment-display functions from WordPress
-and topic-display functions from bbPress. It currently gets all of its settings
-from the Settings > Discussion panel of WordPress, inheriting comment threading
-options. If comment threading (nesting) is not enabled, this plugin will not
-load. bbPress running as a WordPress plugin is also required. 
+and topic-display functions from bbPress. Settings can be adjusted on the bbPress
+Forums options page of WordPress. bbPress running as a WordPress plugin is required. 
 
-Template files can be copied to theme directories. The TwentyEleven theme 
-triggers a comment-style reply framework; its absence causes the plugin to
-revert to the bbPress default table for each reply, indented. The plugin checks
-first in the stylesheet and template directories before reverting to the default
-plugin templates.
-
-Filters are available for modification of plugin behavior. 
+The plugin checks first in the stylesheet and template directories before reverting 
+to the default plugin templates.
 
 == Installation ==
 
 1. Upload the directory `bbpress-threaded-replies` and its contents to the `/wp-content/plugins/` directory.
 1. Activate the plugin through the 'Plugins' menu in WordPress.
+1. Visit the bbPress Forums panel to adjust threading settings.
 
 == Changelog ==
+
+= 0.4 =
+* Update for bbPress 2.1; retain backwards compat to 2.0.
+* Add separate settings section on Forums options page.
+* Update cache layout for complete flush on settings update.
+* Remove twentyeleven theme; rename templates to avoid collisions.
+* Add support for theme-compat.
+* Fix behavior of thread split.
+* Fix default_replies_page reversal.
 
 = 0.3 =
 * Add caching for SQL operations.
@@ -44,6 +47,9 @@ Filters are available for modification of plugin behavior.
 * Initial release. 
 
 == Upgrade Notice ==
+
+= 0.4 =
+* bbPress 2.0 and 2.1 compatible. Template files have been renamed to avoid filename collisions.
 
 = 0.2 =
 * SQL and template updates. Fixes missing pagination for blogs without default 'wp_' database prefix.
