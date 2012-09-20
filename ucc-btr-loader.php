@@ -2,7 +2,7 @@
 /*
 Plugin Name: bbPress Threaded Replies 
 Description: Add threaded (nested) reply functionality to bbPress. 
-Version: 0.4
+Version: 0.4.1
 License: GPL
 Author: Jennifer M. Dodd
 Author URI: http://uncommoncontent.com/
