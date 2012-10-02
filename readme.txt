@@ -3,7 +3,7 @@ Contributors: jmdodd
 Tags: bbpress, replies, threaded, nested
 Requires at least: WordPress 3.4, bbPress 2.0
 Tested up to: 3.4
-Stable tag: 0.4.1
+Stable tag: 0.4.2
 
 Add threaded (nested) reply functionality to bbPress.
 
@@ -23,6 +23,11 @@ to the default plugin templates.
 1. Visit the bbPress Forums panel to adjust threading settings.
 
 == Changelog ==
+
+= 0.4.2 =
+* Change constants STYLESHEETPATH and TEMPLATEPATH to corresponding functions.
+* Fix divide-by-zero in replies_per_page.
+* TinyMCE DOM movement fix (props cosmic_invaders).
 
 = 0.4.1 =
 * SVN fix.

@@ -2,7 +2,7 @@
 /*
 Plugin Name: bbPress Threaded Replies 
 Description: Add threaded (nested) reply functionality to bbPress. 
-Version: 0.4.1
+Version: 0.4.2
 License: GPL
 Author: Jennifer M. Dodd
 Author URI: http://uncommoncontent.com/
@@ -36,16 +36,16 @@ if ( !class_exists( 'UCC_bbPress_Threaded_Replies_Loader' ) ) {
 class UCC_bbPress_Threaded_Replies_Loader {
 	public static $instance;
 	public static $version;
-	public $plugin_dir;
-	public $template_dir;
-	public $lang_dir;
+	public static $plugin_dir;
+	public static $plugin_url;
+	public static $template_dir;
 	
 	public function __construct() {
 		self::$instance = $this;
-		$this->version = '20120915';
+		$this->version = '20121002';
 		$this->plugin_dir   = plugin_dir_path( __FILE__ );
 		$this->plugin_url   = plugins_url( __FILE__ );
-		$this->template_dir = $this->plugin_dir . 'templates';
+		$this->template_dir = trailingslashit( $this->plugin_dir ) . 'templates';
 
 		// Languages.
 		load_plugin_textdomain( 'bbpress-threaded-replies', false, basename( dirname( __FILE__ ) ) . '/languages' );
@@ -154,7 +154,7 @@ class UCC_bbPress_Threaded_Replies_Loader {
 		$options['thread_replies'] = array_key_exists( 'thread_replies', $_options ) ? 1 : 0;
 		$options['thread_replies_depth'] = array_key_exists( 'thread_replies_depth', $_options ) ? absint( $_options['thread_replies_depth'] ) : 5;
 		$options['page_replies'] = array_key_exists( 'page_replies', $_options ) ? 1 : 0;
-		$options['replies_per_page'] = array_key_exists( 'replies_per_page', $_options ) ? absint( $_options['replies_per_page'] ) : 5;
+		$options['replies_per_page'] = array_key_exists( 'replies_per_page', $_options ) && absint( $_options['replies_per_page'] ) > 0 ? absint( $_options['replies_per_page'] ) : 5;
 		$options['default_replies_page'] = ( array_key_exists( 'default_replies_page', $_options ) && ( $_options['default_replies_page'] == 'newest' ) ) ? 'newest' : 'oldest';
 		$options['reply_order'] = ( array_key_exists( 'reply_order', $_options ) && ( $_options['reply_order'] == 'desc' ) ) ? 'desc' : 'asc';
 
@@ -183,11 +183,11 @@ class UCC_bbPress_Threaded_Replies_Loader {
 				$template_name = 'bbpress/ucc-loop-replies.php';
 
 			// Check child theme first
-			if ( file_exists( trailingslashit( STYLESHEETPATH ) . $template_name ) ) {
-				$located = trailingslashit( STYLESHEETPATH ) . $template_name;
+			if ( file_exists( trailingslashit( get_stylesheet_directory() ) . $template_name ) ) {
+				$located = trailingslashit( get_stylesheet_directory() ) . $template_name;
 			// Check parent theme next
-			} elseif ( file_exists( trailingslashit( TEMPLATEPATH ) . $template_name ) ) {
-				$located = trailingslashit( TEMPLATEPATH ) . $template_name;
+			} elseif ( file_exists( trailingslashit( get_template_directory() ) . $template_name ) ) {
+				$located = trailingslashit( get_template_directory() ) . $template_name;
 			// Check theme compatibility
 			} elseif ( file_exists( trailingslashit( bbp_get_theme_compat_dir() ) . $template_name ) ) {
 				$located = trailingslashit( bbp_get_theme_compat_dir() ) . $template_name;
